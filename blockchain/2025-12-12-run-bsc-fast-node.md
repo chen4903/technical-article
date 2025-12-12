@@ -90,13 +90,15 @@ pv snapshot.tar.1.zst | tar --use-compress-program="zstd -d --long=31" -xf - -C 
 
 ### 6. 修剪 Trie 数据
 
-移除不必要的 trie 数据，让节点变成 fast mode（不可逆，转 full node 需要重下快照）：
+> 移除不必要的 trie 数据，让节点变成 fast mode（不可逆，转 full node 需要重下快照）：
+>
+> ```
+> ./geth snapshot prune-state --datadir ./node/geth/chaindata ./genesis.json
+> ```
+>
+> 这个过程比较耗时。
 
-```bash
-./geth snapshot prune-state --datadir ./node/geth/chaindata ./genesis.json
-```
-
-这个过程比较耗时。
+BNB48给的快照已经是裁剪过了的，无需这个步骤
 
 ### 7. 启动节点
 
