@@ -76,16 +76,10 @@ unzip mainnet.zip
 aria2c -s4 -x4 -k1024M -o snapshot.tar.zst https://complete.snapshots.48.club/geth.fast.70885094.tar.zst
 ```
 
-执行：
-
-```bash
-pv snapshot.tar.zst | openssl md5
-```
-
 提取快照，这个过程比较耗时：
 
 ```bash
-pv snapshot.tar.1.zst | tar --use-compress-program="zstd -d --long=31" -xf - -C node
+pv snapshot.tar.zst | tar --use-compress-program="zstd -d --long=31" -xf - -C node
 ```
 
 ### 6. 修剪 Trie 数据
