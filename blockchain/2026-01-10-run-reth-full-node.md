@@ -28,6 +28,26 @@ reth node \
   --ipcpath /root/code/node/eth/data/reth.ipc
 ```
 
+这是同步的15个过程
+
+| 阶段 | 中文名称           | 核心任务                        | 占总体耗时百分比 |
+| ---- | ------------------ | ------------------------------- | ---------------- |
+| 1    | Headers            | 下载并验证全部区块头            | 2 %              |
+| 2    | Block Bodies       | 下载所有区块 body（交易、叔块） | 20 %             |
+| 3    | SenderRecovery     | 恢复每笔交易的 from 地址        | 3 %              |
+| 4    | Execution          | 重放交易，生成状态与收据        | 45 %             |
+| 5    | Hashing            | 计算 plain state 的 keccak 哈希 | 4 %              |
+| 6    | Merkle Unwind      | 回滚至可靠检查点                | <1 %             |
+| 7    | Merkle Execute     | 构造完整 state trie             | 8 %              |
+| 8    | AccountHashing     | 建立账户历史索引                | 2 %              |
+| 9    | StorageHashing     | 建立存储槽历史索引              | 3 %              |
+| 10   | Receipts           | 重建收据日志索引                | 2 %              |
+| 11   | Transaction Lookup | tx\_hash → block\_number 反向表 | 2 %              |
+| 12   | TxHash Block Index | 紧凑版交易定位索引              | 1 %              |
+| 13   | Finalized Headers  | 再次校验已最终确定的区块头      | <1 %             |
+| 14   | Flat State 清理    | 压缩、合并临时状态表            | 2 %              |
+| 15   | Prune / Retention  | 按策略裁剪旧数据                | 1 %              |
+
 ## 共识客户端
 
 lighthouse: https://lighthouse-book.sigmaprime.io/run_a_node.html
@@ -187,6 +207,68 @@ blobstore/472d3d3390e7764a00d1de849551e5de3e0d47be202f09505416300e7abf0b72
 db/
 db/database.version
 db/mdbx.dat
--                                                              1%[>                                                                                                                                            ]   9.63G  33.3MB/s    eta 6h 6m  
+-                                                              1%[>                                                                                                                                            ]   9.63G  3.3MB/s    eta 6h 6m  
 ```
+
+但是很慢啊，换个思路：先多线程下载下来，然后再解压。因为好像public node这个网速被cloudflare限制了，应该是太多人用这个提供商的了（即使我把文件打碎成16份多线程下载，也还是只有20+Mb/s）。换一个提供商，使用https://ethpandaops.io/data/snapshots/。然后多线程下载先，不边下载边解压，执行下面的指令来下载，16个线程：
+
+```bash
+aria2c -x16 -s16 -c https://snapshots.ethpandaops.io/mainnet/reth/24200000/snapshot.tar.zst 
+```
+
+结果快多了，差不多300Mb/s，因为我的服务器最高的速度限制是300Mb/s
+
+```bash
+...
+ *** Download Progress Summary as of Sun Jan 11 13:45:05 2026 ***                                                                                                                                                                                      
+=======================================================================================================================================================================================================================================================
+[#ab2905 55GiB/960GiB(5%) CN:16 DL:351MiB ETA:43m52s]
+FILE: /root/code/node/eth/data/snapshot.tar.zst
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+[#ab2905 57GiB/960GiB(5%) CN:16 DL:290MiB ETA:53m8s]   
+```
+
+okay，等他下载完之后，安装就可以了。
+
+但是过了一会还是被cloudflare掐死了，识别为滥用。还是慢慢下载吧，用一个线程：
+
+```bash
+# ~/code/node/eth/data [15:45:53]
+➜ wget -c https://snapshots.ethpandaops.io/mainnet/reth/24200000/snapshot.tar.zst
+--2026-01-11 15:45:56--  https://snapshots.ethpandaops.io/mainnet/reth/24200000/snapshot.tar.zst
+Resolving snapshots.ethpandaops.io (snapshots.ethpandaops.io)... 2606:4700:20::681a:c98, 2606:4700:20::ac43:44c4, 2606:4700:20::681a:d98, ...
+Connecting to snapshots.ethpandaops.io (snapshots.ethpandaops.io)|2606:4700:20::681a:c98|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 1031536532936 (961G) [application/octet-stream]
+Saving to: ‘snapshot.tar.zst’
+
+snapshot.tar.zst                                     0%[                                                                                                               ]   5.96G  53.7MB/s    eta 5h 44m 
+...
+snapshot.tar.zst                                   100%[+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=====================>] 960.69G  39.7MB/s    in 70m 30s 
+
+2026-01-11 21:28:07 (45.2 MB/s) - ‘snapshot.tar.zst’ saved [1031536532936/1031536532936]
+```
+
+读者可以根据自身情况，来选择不同的方式来下载快照。下载好之后解压即可：
+
+```bash
+tar -I zstd -xf snapshot.tar.zst
+```
+
+解压完成之后，正常启动reth即可
+
+## 结果
+
+出现下面类似的结果，就是同步成功了：
+
+![image-20260112143353262](./assets/image-20260112143353262.png)
+
+
+
+
+
+
+
+
 
