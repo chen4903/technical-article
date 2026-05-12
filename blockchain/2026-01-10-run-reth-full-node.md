@@ -59,7 +59,8 @@ lighthouse bn \
   --execution-jwt /secrets/jwt.hex \
   --checkpoint-sync-url https://mainnet-checkpoint-sync.stakely.io \
   --disable-backfill-rate-limiting \
-  --http-address 127.0.0.1 \
+  --http \
+  --http-address 0.0.0.0 \
   --http-port 5052
 ```
 
