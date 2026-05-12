@@ -11,18 +11,6 @@
 
   - Lighthouse（Consensus）
 
-- 不使用 Docker
-
-- 使用 tmux
-
-- 使用 PublicNode 快照
-
-- Base 数据目录：
-
-```
-/mnt/storage/node/base
-```
-
 - JWT
 
 ```
