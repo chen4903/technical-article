@@ -145,7 +145,16 @@ origin  https://github.com/base/node.git (push)
 
 # 4. 修改配置
 
-- `.env`文件不变
+- `.env`文件
+
+```bash
+CLIENT=${CLIENT:-reth}
+HOST_DATA_DIR=./${CLIENT}-data
+USE_BASE_CONSENSUS=false # 这个修改为false
+```
+
+
+
 - `.env.mainnet`：修改了这些字段，因为要对齐我本地的ETH L1
 
 ```bash
@@ -198,7 +207,6 @@ services:
       - USE_BASE_CONSENSUS=${USE_BASE_CONSENSUS:-false}
     env_file:
       - ${NETWORK_ENV:-.env.mainnet} # Use .env.mainnet by default, override with .env.sepolia for testnet
-
 ```
 
 # 5. 启动
